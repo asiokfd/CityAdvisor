@@ -54,10 +54,10 @@ dic_categorias= { # diccionario que usaré para definir las subcategorias a busc
     
                              }              
 def new_func():
-    rentacodigo = pd.read_csv ("../Data/rentaporcp.csv")
+    rentacodigo = pd.read_csv ("./Data/rentaporcp.csv")
     return rentacodigo
 
-rentacodigo = new_func() 
+
 
 
 load_dotenv()
@@ -73,6 +73,7 @@ db = client2.get_database("ciudades")
 
 
 def test_and_create( ubicacion, region):
+    rentacodigo = new_func() 
     """ 
         Esta función recibo dos inputs del usuario, los utiliza para hacer una geolozalización mediante la api de google places, de la que
         obtengo sus coordenadas, que guardamos en 2 formatos, y la dirección, que usaremos como nombre para las colecciones. Meto las variables
@@ -86,20 +87,22 @@ def test_and_create( ubicacion, region):
         a=coords[0]["geometry"]["location"]["lat"] 
         b=coords[0]["geometry"]["location"]["lng"]
         c = str (a) +"," + str(b) # Formato que luego entienda foursquare
-        
+        renta_neta=0
+        renta_bruta=0
         for n in range (len (rentacodigo)):
-            if rentacodigo["codigo postal"][n] == nombre:
-                renta_neta= rentacodigo["renta disponible media"][n]
-                renta_bruta= rentacodigo["renta bruta media"][n]
-        else:
-            pass
+
+                if rentacodigo["codigo postal"][n] == nombre:
+                    renta_neta += rentacodigo["renta disponible media"][n]
+                    renta_bruta += rentacodigo["renta bruta media"][n]
+                else:
+                    pass
         
-        dic= {"nombre": nombre,
-                "coordenadas": c,
-                 "latitud":a,
-                 "longitud":b,
-                "renta bruta": renta_bruta,
-                 "renta neta": renta_neta}
+        dic= {          "nombre": nombre,
+                        "coordenadas": c,
+                        "latitud":a,
+                        "longitud":b,
+                        "renta bruta": renta_bruta,
+                        "renta neta": renta_neta}
             
         if test(nombre) == True:
             
@@ -109,7 +112,7 @@ def test_and_create( ubicacion, region):
             
             pass
         
-            db.create_collection (nombre)   
+        db.create_collection (nombre)   
     except: "los datos introducidos no son correctos"
         
     return  get_coords (nombre, dic)

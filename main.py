@@ -37,12 +37,14 @@ st.write("""
 """)
 
 
-calle = st.text_input("¿Por dónde quieres empezar? Introduce una calle a continuación:")
+calle = st.text_input("¿Por dónde quieres empezar? Introduce una calle a continuación:", "Calle Alcalá")
+ciudad = st.text_input("Concretemos un poco más, ¿En qué ciudad quieres buscar?")
+
 if not calle:
    st.warning('Por favor, introduzca una calle')
    st.stop()
 
-ciudad = st.text_input("Concretemos un poco más, ¿En qué ciudad quieres buscar?")
+
 if not ciudad:
    st.warning('Por favor, introduzca la ciudad o región')
    st.stop()
@@ -50,7 +52,7 @@ if not ciudad:
 
 ubicacion= dat.test_and_create (calle, ciudad)
 
-st.write ("usted ha elegido:", ubicacion)
+st.write ("su codigo postal es:", ubicacion)
 
 items = st.multiselect (
 
