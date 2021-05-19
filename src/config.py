@@ -17,10 +17,8 @@ dic_categorias= {
     "museos": ["museum"],
     "salas_de_conciertos": ["rock club", "jazz club", "concert"],
     "piscina_para_Emilio": ["pool"],
-    "bibliotecas" : ["library", "book store"],
+    "bibliotecas" : ["library", "book store"],               
     "centros_comerciales": ["mall", "shopping center"]
     
-    
+                                                             
 }
-    
-    

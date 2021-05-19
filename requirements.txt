@@ -1,0 +1,11 @@
+folium==0.12.1
+foursquare==1!2020.1.30
+plotly==4.14.3
+googlemaps==4.4.5
+pymongo==3.11.4
+streamlit==0.82.0
+requests==2.25.1
+streamlit_folium==0.3.0
+pandas==1.2.4
+Pillow==8.2.0
+python-dotenv==0.17.1

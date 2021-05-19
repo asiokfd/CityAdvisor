@@ -2,8 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
-Data
+.vscode
+.vs
 .csv
+mapa.html
+
 # C extensions
 *.so
 .vs
