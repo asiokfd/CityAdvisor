@@ -11,31 +11,48 @@ from folium.plugins import MarkerCluster
 import random
 
 
-dic_categorias= { # diccionario que, con la key voy a definir las categorias para cada documento en la db,
-                    # y los values buscaré en foursuqare
-    
+dic_categorias= { # diccionario que usaré para definir las subcategorias a buscar y a introducir en la db
+#infraestructuras transporte
+    "aeropuertos" : ["airport"],
+    "estaciones de tren": ["train station", "renfe"],  
+    "parques": ["park",],
+    "estaciones de metro": ["metro", "subway station"],
+    "estaciones de autobús": ["bus"],
+    "carril bici": ["bike trail"],
+# infraestructuras sanidad
+    "hospitales" : ["hospital"],
+    "clinicas": ["medical center", "clinic"],
+    "farmacias": ["pharmacy", "farmacia"],
+    "veterinario": ["veterinarian"],
+#restauracion
     "restaurantes": ["restaurant"],
-    "playas": "4bf58dd8d48988d1e2941735",
     "ocio_nocturno": ["pub","Cocktail Bar"],
     "hoteles": ["hotel"],
-    "ocio_deporte": ["gym", "Fitness"],
-    "colegios" : ["school", "primary school", "elemental school"],
-    "guarderias" : ["kindergarden", "preschool"],
-    "universidades": ["college", "university"],
-    "aeropuertos" : ["airport"],
-    "estaciones de tren": ["train station"],
-    "parques": ["park"],
-    "hospitales" : ["hospital", "medical center"],
+    "cafeterias": ["coffe"],
+#ocio y cultura
     "cines": ["cinema", "movie theatre"],
-    "teatros": ["theatre"],
+    "teatros": ["theatre", "teatro"],
     "museos": ["museum"],
-    "salas_de_conciertos": ["rock club", "jazz club", "concert"],
-    "piscina_para_Emilio": ["pool"],
-    "bibliotecas" : ["library", "book store"],               
-    "centros_comerciales": ["mall", "shopping center"]
+    "salas_de_conciertos": ["rock club", "concert"],
+    "bibliotecas" : ["library", "biblioteca"], 
+#ocio y deporte
+    "ocio_deporte": ["gym", "Fitness"],
+    "piscina": ["pool", "piscina"],
+    "canchas": ["cancha", "court"],
+    "estadios": ["stadium", "estadio"],
     
-                                                             
-}                
+#infraestructuras educacion
+    "colegios" : ["primary school", "elemental school"],
+    "guarderias" : ["kindergarden", "guarderia"],
+    "universidades": ["college", "university"],
+    "Institutos" : ["secundary school", "bachiller"],
+    "Escuelas" : ["school", "escuela"],
+    
+#comercio
+    "centros_comerciales": ["mall", "shopping center"],
+    "Tiendas minoristas" : ["shop", "tienda"]
+    
+                             }              
 
 
 
@@ -133,7 +150,8 @@ def get_data_fields (coord, collection):
                 direccion= "no disponible"
         
             dice2 = {"nombre": nombre,
-                "categoria": categoria, 
+                "categoria": get_primary(categoria),
+                "subcategoria": categoria,
                "latitud":latitud,
                "longitud": longitud,
                 "tipo" : tipo,
@@ -159,7 +177,7 @@ def get_map (collection, items):
     """
     lista=[]
     for item in items:
-        a=list (db[collection]. find ({"categoria": item},{"latitud":1,"nombre":1, "longitud":1, "categoria":1, "_id":0}).limit(15))
+        a=list (db[collection]. find ({"subcategoria": item},{"latitud":1,"nombre":1, "longitud":1, "categoria":1, "subcategoria":1, "_id":0}).limit(15))
         lista.append (a) # agregamos la respuesta para cada una de las querys, tantas como items nos hayan pasado.
     cosa=[]
     print (lista)
@@ -192,16 +210,16 @@ def making_map (df,collection):
     
     nombre= a[0]["nombre"]
     
-    mapa = folium.Map(location= [lat, long], zoom_start= 15, tooltip=nombre)
+    mapa = folium.Map(location= [lat, long], zoom_start= 15)
     
     for i, row in df.iterrows():
         
         marcador = {
             "location":[row["latitud"], row["longitud"]],
-            "tooltip" : row["categoria"]
+            "tooltip" : row["subcategoria"]
         }
     
-        if row["categoria"] == "Festivo":
+        if row["categoria"] == "Festivo": #personalizar
             icon = Icon(color = "green",
                     prefix = "fa",
                     icon = "glass",
@@ -235,39 +253,108 @@ def grafica_intro():
   
     collection= random.choice (db.list_collection_names())
     lista=[]
-    for item in lista_items():
+    for item in list_categories(collection):
         a=list (db[collection].find ({"categoria": item},{ item :1, "_id":0}))
         cantidad= len (a)
         lista.append ( { collection : cantidad } )
-    df=pd.DataFrame (lista, index=lista_items())
+    df=pd.DataFrame (lista, index=list_categories(collection))
     return df
 
-def grafica_post(collection):
+
+def grafica_intro2():
+    """
+    función que crea un dataframe con la cantidad de documentos de cada categoria para una colección aleatoria realizando querys para cada
+    categoría y quedándose con el len
+    """
+  
+    collection= random.choice (db.list_collection_names())
+    lista=[]
+    for item in lista_sub():
+        a=list (db[collection].find ({"subcategoria": item},{ item :1, "_id":0}))
+        cantidad= len (a)
+        lista.append ( { collection : cantidad } )
+    df=pd.DataFrame (lista, index=lista_sub())
+    return df
+
+def grafica_sub(collection):
     """
     Clon del anterior, pero con una coleción definida
     """
   
     lista=[]
-    for item in lista_items():
-        a=list (db[collection].find ({"categoria": item},{ item :1, "_id":0}))
+    for item in lista_sub():
+        a=list (db[collection].find ({"subcategoria": item},{ item :1, "_id":0}))
         cantidad= len (a)
         lista.append ( { collection : cantidad } )
-    df=pd.DataFrame (lista, index=lista_items())
+    df=pd.DataFrame (lista, index=lista_sub())
     return df
 
+def grafica_cat(collection):
+    """
+    Clon del anterior, pero con una coleción definida
+    """
+  
+    lista=[]
+    for item in list_categories(collection):
+        a=list (db[collection].find ({"categoria": item},{ item :1, "_id":0}))
+        cantidad= len (a)           #pasar a metodo count
+        lista.append ( { collection : cantidad } )
+    df=pd.DataFrame (lista, index=list_categories(collection))
+    return df
 
+def list_categories (collection):
+    return (list (db[collection].distinct("categoria")))
 
 def lista_colecciones():
     return list (db.list_collection_names())
     
 
-def lista_items():
+def lista_sub():
     c= list (dic_categorias.keys())
     return c
 
 
-
+def get_primary (categoria):
+    """
+    Esta función recibe una categoria, y la compara con nuestro dic_categorias, según sea la categoría devuelve su categoría superior.
+    para esto he agrupado las categorías por el indice
+    """
+    keys= list (dic_categorias.keys())
+    cat1= keys[:6]
+    cat2= keys[6:10]
+    cat3= keys[10:14]
+    cat4= keys [14:19]
+    cat5= keys [19:23]
+    cat6= keys [23:28]
+    cat7= keys[-2:]
     
+    if categoria in cat1:
+        clase = "Infraestructura transporte"
+        return clase
+    elif categoria in cat2:
+        clase= "Infraestructura sanidad"
+        return clase
+    elif categoria in cat3:
+        clase= "Ocio y Restauración"
+        return clase
+    elif categoria in cat4:
+        clase= "Ocio y cultura"
+        return clase
+    elif categoria in cat5:
+        clase= "Ocio y deporte"
+        return clase
+    elif categoria in cat6:
+        clase= "Infraestructuras educacion"
+        return clase
+    elif categoria in cat7:
+        clase= "Comercio"
+        return clase
+    else:
+        return "desconocido"
+
+
+
+
     
 
 
