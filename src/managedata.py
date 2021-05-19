@@ -9,7 +9,7 @@ import folium
 from folium import Choropleth, Circle, Marker, Icon, Map
 from folium.plugins import MarkerCluster
 import random
-
+import Data
 
 dic_categorias= { # diccionario que usaré para definir las subcategorias a buscar y a introducir en la db
 #infraestructuras transporte
@@ -53,7 +53,11 @@ dic_categorias= { # diccionario que usaré para definir las subcategorias a busc
     "Tiendas minoristas" : ["shop", "tienda"]
     
                              }              
+def new_func():
+    rentacodigo = pd.read_csv ("../Data/rentaporcp.csv")
+    return rentacodigo
 
+rentacodigo = new_func() 
 
 
 load_dotenv()
@@ -78,15 +82,24 @@ def test_and_create( ubicacion, region):
     try: 
         busqueda= ubicacion + ", " + region #unimos en un string para pasarselo como búsqueda a gplaces
         coords=gmaps.geocode( address= busqueda)
-        nombre = coords[0]['formatted_address'] # nos quedamos con el nombre, que será el de la colección
+        nombre = coords[0]["address_components"][5]["short_name"] # nos quedamos con el nombre, que será el de la colección
         a=coords[0]["geometry"]["location"]["lat"] 
         b=coords[0]["geometry"]["location"]["lng"]
         c = str (a) +"," + str(b) # Formato que luego entienda foursquare
+        
+        for n in range (len (rentacodigo)):
+            if rentacodigo["codigo postal"][n] == nombre:
+                renta_neta= rentacodigo["renta disponible media"][n]
+                renta_bruta= rentacodigo["renta bruta media"][n]
+        else:
+            pass
+        
         dic= {"nombre": nombre,
                 "coordenadas": c,
                  "latitud":a,
-                 "longitud":b}
-
+                 "longitud":b,
+                "renta bruta": renta_bruta,
+                 "renta neta": renta_neta}
             
         if test(nombre) == True:
             
@@ -130,7 +143,7 @@ def get_data_fields (coord, collection):
     
    
     for categoria, codigo in dic_categorias.items():  # recorremos diccionario, y para cada key, una consulta
-        request = client.venues.search(params = {'query': codigo , 'll': coord, "radius": 1500, "limit": 50})
+        request = client.venues.search(params = {'query': codigo , 'll': coord, "radius": 800, "limit": 50})
         lista=request["venues"]
         
         
@@ -216,10 +229,10 @@ def making_map (df,collection):
         
         marcador = {
             "location":[row["latitud"], row["longitud"]],
-            "tooltip" : row["subcategoria"]
+            "tooltip" : row["nombre"]
         }
     
-        if row["categoria"] == "Festivo": #personalizar
+        if row["categoria"] == "Festivo": #personalizar por categorias (7)
             icon = Icon(color = "green",
                     prefix = "fa",
                     icon = "glass",
