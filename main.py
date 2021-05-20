@@ -68,13 +68,13 @@ col1,col2 = st.beta_columns([3,2])
 col1.header ("cantidad de elementos seleccionados" )                                           
 col1.dataframe (dat.grafica_items(lista, items))
 col2.header ("Rentas según Codigo postal")
-col2.bar_chart (dat.grafica_renta(lista))
+col2.line_chart (dat.grafica_renta(lista))
 
 
-st.dataframe (dat.grafica_cat2(lista))
-st.write ( "0:desconocido, 1: Infraestructura transporte, 2: Comercio, 3: Infraestructura sanidad, 4: Ocio y Restauración, 5: Ocio y cultura, 6: Ocio y deporte, 7: Infraestructuras educacion")
+st.bar_chart (dat.grafica_cat2(lista))
+st.write ( "Las mismas categorias, pero su peso relativo")
 
-
+st.bar_chart (dat.porcentajes(lista))
 
 #col1 (mapa)
 #col2 (asiokfd)

@@ -12,51 +12,63 @@ import random
 import pgeocode
 import numpy as np
 
+
 dic_categorias= { # diccionario que usaré para definir las subcategorias a buscar y a introducir en la db
 #infraestructuras transporte
-    "aeropuertos" : ["airport"],
-    "estaciones de tren": ["train station", "renfe"],  
-    "parques": ["park",],
-    "estaciones de metro": ["metro", "subway station"],
-    "estaciones de autobús": ["bus"],
-    "carril bici": ["bike trail"],
+    "aeropuertos" : ["aeropuerto"],
+    "estaciones de tren": ["estacion de tren", "renfe"],  
+    "parking": ["parking",],
+    "estaciones de metro": ["metro"],
+    "estaciones de autobús": ["bus","autobus"],
+    "carril bici": ["bike trail", "carril bici"],
 # infraestructuras sanidad
-    "hospitales" : ["hospital"],
-    "clinicas": ["medical center", "clinic"],
+    "hospitales" : ["hospital", "centro de salud"],
+    "clinicas": ["clinica", "dentista"],
     "farmacias": ["pharmacy", "farmacia"],
     "veterinario": ["veterinarian"],
 #restauracion
-    "restaurantes": ["restaurant"],
-    "ocio_nocturno": ["pub","Cocktail Bar"],
+    "restaurantes": ["restaurant", "restaurante"],
+    "ocio_nocturno": ["pub","Bar"],
     "hoteles": ["hotel"],
-    "cafeterias": ["coffe"],
+    "cafeterias": ["coffe", "cafeteria"],
 #ocio y cultura
-    "cines": ["cinema", "movie theatre"],
+    "cines": ["cine", "autocine"],
     "teatros": ["theatre", "teatro"],
-    "museos": ["museum"],
-    "salas_de_conciertos": ["rock club", "concert"],
+    "museos": ["museum", "museo"],
+    "salas_de_conciertos": ["sala de conciertos", "jazz club"],
     "bibliotecas" : ["library", "biblioteca"], 
 #ocio y deporte
     "ocio_deporte": ["gym", "Fitness"],
     "piscina": ["pool", "piscina"],
-    "canchas": ["cancha", "court"],
+    "canchas": ["cancha", "parque"],
     "estadios": ["stadium", "estadio"],
     
 #infraestructuras educacion
-    "colegios" : ["primary school", "elemental school"],
-    "guarderias" : ["kindergarden", "guarderia"],
-    "universidades": ["college", "university"],
-    "Institutos" : ["secundary school", "bachiller"],
+    "colegios" : ["primary school", "colegio"],
+    "guarderias" : ["jardin de infancia", "guarderia"],
+    "universidades": ["universidad", "university"],
+    "Institutos" : ["instituto", "educacion secundaria"],
     "Escuelas" : ["school", "escuela"],
     
 #comercio
-    "centros_comerciales": ["mall", "shopping center"],
-    "Tiendas minoristas" : ["shop", "tienda"]
+    "centros_comerciales": ["centro comercial", "shopping center"],
+    "Tiendas minoristas" : ["estanco", "tienda"]
     
-                             }         
+}                
 
 lista_categorias= ["desconocido","Infraestructura transporte","Comercio","Infraestructura sanidad","Ocio y Restauración","Ocio y cultura","Ocio y deporte","Infraestructuras educacion"]
 
+
+load_dotenv()
+tokg = os.getenv("tokg")
+tokf3 = os.getenv ("tokf3")
+client2= MongoClient ("localhost:27017")
+
+client = foursquare.Foursquare( access_token= tokf3 )
+gmaps = googlemaps.Client(key= tokg )
+db = client2.get_database("ciudades")
+
+# todo lo anterior no está en config por problemas de importación.
 def show_categorias():
     lista=[]
     for n in range (len (lista_categorias)):
@@ -70,19 +82,6 @@ def new_func():
 
 def colecciones():
     return db.list_collection_names()
-
-
-load_dotenv()
-tokg = os.getenv("tokg")
-tokf3 = os.getenv ("tokf3")
-client2= MongoClient ("localhost:27017")
-
-client = foursquare.Foursquare( access_token= tokf3 )
-gmaps = googlemaps.Client(key= tokg )
-db = client2.get_database("ciudades")
-
-# todo lo anterior no está en config por problemas de importación.
-
 def validar_codigo (cp):
     '''Esta función comprueba que el código postal devuevla una dirección y que tenga una longitud de 5'''
     
@@ -365,7 +364,7 @@ def get_primary (categoria):
     Esta función recibe una categoria, y la compara con nuestro dic_categorias, según sea la categoría devuelve su categoría superior.
     para esto he agrupado las categorías por el indice
     """
-    keys= list (dic_categorias.keys())
+    keys= list (dic_categoriaskeys())
     cat1= keys[:6]
     cat2= keys[6:10]
     cat3= keys[10:14]
@@ -412,37 +411,57 @@ def grafica_items(lista, items):
     """
     Clon del anterior, pero con una coleción definida
     """
-    df= pd.DataFrame (items)
+    df= pd.DataFrame (index=lista)
     list_=[]
-    for i in lista:
-        i= str(i)
+    for item in items:
+        
         
         lista2=[]
-        for item in items:
+        for i in lista:
+            i= str(i)
             a=list (db[i].find ({"subcategoria": item},{ item :1, "_id":0}))
             cantidad= len (a)
             lista2.append (cantidad)
-        df[i]=lista2
-    df.set_index (0, inplace=True)  
+            
+        df[item]=lista2
+    
     return df
 
 def grafica_cat2(lista):
     """
     Clon del anterior, pero con una coleción definida
     """
-    df= pd.DataFrame (lista_categorias)
+    df= pd.DataFrame (index=lista)
     list_=[]
-    for item in lista:
-        item= str(item)
+    for cat in lista_categorias:
+        
         
         lista2=[]
-        for cat in lista_categorias:
+        for item in lista:
+            item= str(item)
             a=list (db[item].find ({"categoria": cat},{ item :1, "_id":0}))
             cantidad= len (a)
             lista2.append (cantidad)
-        df[item]=lista2
-    df.set_index (0, inplace=True)  
+        df[cat]=lista2
+     
     return df
+
+def porcentajes (lista):
+    df=grafica_cat2 (lista)
+    suma=[]
+    for n in range (len (df)):
+        suma.append (df.iloc[n].sum())
+    df["total elementos"]= suma
+    for col in df.columns:
+        if df[col].sum() == 0:
+            df.drop([col], axis=1, inplace=True)
+        else:
+            df[col]=df[col]/df["total elementos"]*100
+    df.drop (["total elementos"], axis=1, inplace=True)
+    
+    return df
+
+
 
 
 def grafica_renta(lista):
