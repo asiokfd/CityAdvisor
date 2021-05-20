@@ -9,7 +9,8 @@ import folium
 from folium import Choropleth, Circle, Marker, Icon, Map
 from folium.plugins import MarkerCluster
 import random
-import Data
+import pgeocode
+import numpy as np
 
 dic_categorias= { # diccionario que usaré para definir las subcategorias a buscar y a introducir en la db
 #infraestructuras transporte
@@ -52,12 +53,23 @@ dic_categorias= { # diccionario que usaré para definir las subcategorias a busc
     "centros_comerciales": ["mall", "shopping center"],
     "Tiendas minoristas" : ["shop", "tienda"]
     
-                             }              
+                             }         
+
+lista_categorias= ["desconocido","Infraestructura transporte","Comercio","Infraestructura sanidad","Ocio y Restauración","Ocio y cultura","Ocio y deporte","Infraestructuras educacion"]
+
+def show_categorias():
+    lista=[]
+    for n in range (len (lista_categorias)):
+        show= str (n) + ":" + str (lista_categorias[n])
+        lista.append (show)
+    return lista
 def new_func():
     rentacodigo = pd.read_csv ("./Data/rentaporcp.csv")
+    rentacodigo['codigo postal'] = rentacodigo['codigo postal'].apply(lambda x: "0" + str(x) if len(str(x))==4 else str(x))
     return rentacodigo
 
-
+def colecciones():
+    return db.list_collection_names()
 
 
 load_dotenv()
@@ -71,49 +83,67 @@ db = client2.get_database("ciudades")
 
 # todo lo anterior no está en config por problemas de importación.
 
+def validar_codigo (cp):
+    '''Esta función comprueba que el código postal devuevla una dirección y que tenga una longitud de 5'''
+    
+    coords=gmaps.geocode( address= cp, region="ES")
+    nombre = coords[0]["address_components"][0]["short_name"]
+    
+    if type(nombre) == int and len(nombre)==5: 
+        return nombre
+    else:
+        nomi = pgeocode.Nominatim("es") #la ubicación del CP no es uiforme respuestas de gplaces no son uniformes, 
+        a = nomi.query_postal_code(cp)  # así que incluyo una alternativa
+        if a["latitude"]==np.nan:
+            return "Latitude es un NaN"
+        else:
+            nombre=a["postal_code"]
+            if len(nombre)==5:
+                return nombre
 
-def test_and_create( ubicacion, region):
-    rentacodigo = new_func() 
+
+def test_and_create(cp): 
     """ 
         Esta función recibo dos inputs del usuario, los utiliza para hacer una geolozalización mediante la api de google places, de la que
         obtengo sus coordenadas, que guardamos en 2 formatos, y la dirección, que usaremos como nombre para las colecciones. Meto las variables
         que me interesan en un diccionario, compruebo que la colección no exista por el nombre, si no existe la creo y cómo salida llamámos a
         otra función pasándole el diccionario y el nombre de la colección
     """
-    try: 
-        busqueda= ubicacion + ", " + region #unimos en un string para pasarselo como búsqueda a gplaces
-        coords=gmaps.geocode( address= busqueda)
-        nombre = coords[0]["address_components"][5]["short_name"] # nos quedamos con el nombre, que será el de la colección
-        a=coords[0]["geometry"]["location"]["lat"] 
-        b=coords[0]["geometry"]["location"]["lng"]
-        c = str (a) +"," + str(b) # Formato que luego entienda foursquare
-        renta_neta=0
-        renta_bruta=0
-        for n in range (len (rentacodigo)):
-
-                if rentacodigo["codigo postal"][n] == nombre:
-                    renta_neta += rentacodigo["renta disponible media"][n]
-                    renta_bruta += rentacodigo["renta bruta media"][n]
-                else:
-                    pass
+    #Validamos el input
+    nombre = validar_codigo(cp)
+    rentacodigo= new_func()
+    #Comprobamos que no esté creada
+    if test(nombre):
+        return nombre
         
+    #Definimos coordenadas
+    coords=gmaps.geocode( address= cp, region="ES")
+    a=coords[0]["geometry"]["location"]["lat"] 
+    b=coords[0]["geometry"]["location"]["lng"]
+    c = str (a) +"," + str(b) # Formato que luego entienda foursquare
+    
+    #Renta
+    renta_neta=0
+    renta_bruta=0
+    
+    for n in range (len(rentacodigo)):
+        if rentacodigo["codigo postal"][n] == str(nombre):
+                renta_neta += rentacodigo["renta disponible media"][n]
+                renta_bruta += rentacodigo["renta bruta media"][n]
+        else:
+            print("El código postal no se encuentra en el df")
+        
+        #Creamos el diccionario
         dic= {          "nombre": nombre,
                         "coordenadas": c,
                         "latitud":a,
                         "longitud":b,
                         "renta bruta": renta_bruta,
                         "renta neta": renta_neta}
-            
-        if test(nombre) == True:
-            
-            return (nombre)
-        
-        else:
-            
-            pass
-        
-        db.create_collection (nombre)   
-    except: "los datos introducidos no son correctos"
+    
+    #Creamos la colección
+    db.create_collection (str(nombre))   
+    
         
     return  get_coords (nombre, dic)
 
@@ -345,6 +375,7 @@ def get_primary (categoria):
     cat7= keys[-2:]
     
     if categoria in cat1:
+
         clase = "Infraestructura transporte"
         return clase
     elif categoria in cat2:
@@ -369,8 +400,66 @@ def get_primary (categoria):
         return "desconocido"
 
 
+def query_rbmedia(ubicacion):
+    a=  list (db[ubicacion]. find ({"coordenadas": {"$exists": True}},{"renta bruta":1,"renta neta" :1, "nombre":1,"_id":0}))
+    return a[0]["renta bruta"]
+
+def query_rnmedia(ubicacion):
+    a=  list (db[ubicacion]. find ({"coordenadas": {"$exists": True}},{"renta bruta":1,"renta neta" :1, "nombre":1,"_id":0}))
+    return a[0]["renta neta"]
+
+def grafica_items(lista, items):
+    """
+    Clon del anterior, pero con una coleción definida
+    """
+    df= pd.DataFrame (items)
+    list_=[]
+    for i in lista:
+        i= str(i)
+        
+        lista2=[]
+        for item in items:
+            a=list (db[i].find ({"subcategoria": item},{ item :1, "_id":0}))
+            cantidad= len (a)
+            lista2.append (cantidad)
+        df[i]=lista2
+    df.set_index (0, inplace=True)  
+    return df
+
+def grafica_cat2(lista):
+    """
+    Clon del anterior, pero con una coleción definida
+    """
+    df= pd.DataFrame (lista_categorias)
+    list_=[]
+    for item in lista:
+        item= str(item)
+        
+        lista2=[]
+        for cat in lista_categorias:
+            a=list (db[item].find ({"categoria": cat},{ item :1, "_id":0}))
+            cantidad= len (a)
+            lista2.append (cantidad)
+        df[item]=lista2
+    df.set_index (0, inplace=True)  
+    return df
 
 
-    
+def grafica_renta(lista):
+    """
+    Clon del anterior, pero con una coleción definida
+    """
+    list_=[]
+    lista2=[]
+    for item in lista:
+        
+        rentaneta = query_rnmedia (str (item))
+        rentabruta = query_rbmedia (str(item))
+        list_.append ( { "Renta Disponible" : rentaneta} )
+        lista2.append (rentabruta)
+    df=pd.DataFrame (list_)
+    df["Renta Bruta"]=lista2  
+    df.index= lista
+    return df  
 
 

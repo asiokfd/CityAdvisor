@@ -4,7 +4,6 @@ import src.managedata as dat
 import plotly.express as px
 import pandas as pd
 from streamlit_folium import folium_static
-import codecs
 import streamlit.components.v1 as components
 
 
@@ -22,7 +21,7 @@ col1.image(imagen)
 col2.bar_chart (dat.grafica_intro2())
 
 
-st.write(""" Bienvenidos a CityAdvisor! Tu comparador urbano!
+st.write(""" Bienvenidos a CityAdvisor! comparando códisgos postales desde 2021!
 
 """)
 
@@ -30,29 +29,22 @@ col1,col2 = st.beta_columns([3,2])
                                             
 col1.dataframe (dat.grafica_intro())
 col2.image (imagen2)
-#
+
 
 st.write("""
 ## Empecémos
 """)
 
 
-calle = st.text_input("¿Por dónde quieres empezar? Introduce una calle a continuación:", "Calle Alcalá")
-ciudad = st.text_input("Concretemos un poco más, ¿En qué ciudad quieres buscar?")
-
-if not calle:
-   st.warning('Por favor, introduzca una calle')
+lista= st.multiselect (" Haz tu selección:", dat.colecciones())
+if not lista:
+   st.warning('Por favor, seleccione algún elemento')
    st.stop()
+cp=st.text_input ("si no encuentras lo que buscas, creemoslo: Introduce un codigo postal")
+if cp:
+    ubicacion= dat.test_and_create (cp)
+    st.write ("El primer codigo postal es:", ubicacion)
 
-
-if not ciudad:
-   st.warning('Por favor, introduzca la ciudad o región')
-   st.stop()
-
-
-ubicacion= dat.test_and_create (calle, ciudad)
-
-st.write ("su codigo postal es:", ubicacion)
 
 items = st.multiselect (
 
@@ -62,16 +54,33 @@ if not items:
    st.warning('Por favor, seleccione una categoría')
    st.stop()
 
-mapa=dat.get_map (ubicacion, items)
 
-if mapa is False:
-    st.warning ("Lo sentimos, no hay nada que mostrar con su selección")
-else:
-    folium_static (mapa, width=900, height=600)
+# mapa2=folium_static (dat.get_map (ubicacion2, items))
+#if mapa is False:
+ #   st.warning ("Lo sentimos, no hay nada que mostrar para el primer resultado")
+#
+#elif mapa2 is False:
+ #   st.warning ("lo sentimos, no hay nada que mostrar para su segundo resultado")    
+#else:
+ #   st.write ("estamos preparando sus resultados")
+
+col1,col2 = st.beta_columns([3,2])
+col1.header ("cantidad de elementos seleccionados" )                                           
+col1.dataframe (dat.grafica_items(lista, items))
+col2.header ("Rentas según Codigo postal")
+col2.bar_chart (dat.grafica_renta(lista))
 
 
-col1,col2 = st.beta_columns ([2,2])
-col1.dataframe (dat.grafica_cat(ubicacion))
-col1.subheader ("Totales por categoría" )
-col2.bar_chart (dat.grafica_sub (ubicacion))
-col2.subheader ("Totales por subcategoria")
+st.dataframe (dat.grafica_cat2(lista))
+st.write ( "0:desconocido, 1: Infraestructura transporte, 2: Comercio, 3: Infraestructura sanidad, 4: Ocio y Restauración, 5: Ocio y cultura, 6: Ocio y deporte, 7: Infraestructuras educacion")
+
+
+
+#col1 (mapa)
+#col2 (asiokfd)
+
+st.write ("si quieres, vemos algunos sitios más concretos")
+
+ubicacion= str (st.selectbox (" Vamos a verlo en el mapa", dat.colecciones()))
+
+mapa=folium_static (dat.get_map (ubicacion, items))
