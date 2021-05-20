@@ -9,3 +9,6 @@ streamlit_folium==0.3.0
 pandas==1.2.4
 Pillow==8.2.0
 python-dotenv==0.17.1
+pgeocode==0.3.0
+selenium==3.141.0
+numpy==1.20.3

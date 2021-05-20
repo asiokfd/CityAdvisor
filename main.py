@@ -1,17 +1,15 @@
 import streamlit as st
 from PIL import Image
-import src.managedata as dat
+
 import plotly.express as px
 import pandas as pd
 from streamlit_folium import folium_static
-import streamlit.components.v1 as components
-
-
+import src.dataframes as dat
+import src.mongo as mdb
+from src.maps import get_map
+import src.getdata as tac
 st.set_page_config(layout="wide", page_title = "CityAdvisor")
 
-st.write("""
-# Welcome to City Advisor
-""")
 
 
 col1,col2 = st.beta_columns([2,3])
@@ -21,7 +19,7 @@ col1.image(imagen)
 col2.bar_chart (dat.grafica_intro2())
 
 
-st.write(""" Bienvenidos a CityAdvisor! comparando códisgos postales desde 2021!
+st.write(""" Bienvenidos a CityAdvisor! comparando códigos postales desde 2021!
 
 """)
 
@@ -36,14 +34,12 @@ st.write("""
 """)
 
 
-lista= st.multiselect (" Haz tu selección:", dat.colecciones())
-if not lista:
-   st.warning('Por favor, seleccione algún elemento')
-   st.stop()
-cp=st.text_input ("si no encuentras lo que buscas, creemoslo: Introduce un codigo postal")
+lista= st.multiselect (" Haz tu selección:", mdb.colecciones())
+
+cp=st.text_input ("Si no encuentras lo que buscas, creémoslo: Introduce un codigo postal")
 if cp:
-    ubicacion= dat.test_and_create (cp)
-    st.write ("El primer codigo postal es:", ubicacion)
+    ubicacion= tac.test_and_create (cp)
+    st.write ("El código", ubicacion, " ya está diponible en nuestra base de datos")
 
 
 items = st.multiselect (
@@ -55,32 +51,26 @@ if not items:
    st.stop()
 
 
-# mapa2=folium_static (dat.get_map (ubicacion2, items))
-#if mapa is False:
- #   st.warning ("Lo sentimos, no hay nada que mostrar para el primer resultado")
-#
-#elif mapa2 is False:
- #   st.warning ("lo sentimos, no hay nada que mostrar para su segundo resultado")    
-#else:
- #   st.write ("estamos preparando sus resultados")
-
-col1,col2 = st.beta_columns([3,2])
-col1.header ("cantidad de elementos seleccionados" )                                           
+col1,col2 = st.beta_columns([2,2])
+col1.header ("Suma de los elementos seleccionados" )                                           
 col1.dataframe (dat.grafica_items(lista, items))
 col2.header ("Rentas según Codigo postal")
 col2.line_chart (dat.grafica_renta(lista))
 
+st.header ("Relación de rentas con categorias")
+st.line_chart (dat.grafica_renta_cats(lista))
+st.subheader ("Las rentas están escaladas para una correcta visualización")
 
-st.bar_chart (dat.grafica_cat2(lista))
-st.write ( "Las mismas categorias, pero su peso relativo")
+st.header ( "Este es el peso relativo de cada categoria para su selección")
 
 st.bar_chart (dat.porcentajes(lista))
 
-#col1 (mapa)
-#col2 (asiokfd)
 
-st.write ("si quieres, vemos algunos sitios más concretos")
+st.write ("Si quieres, vemos algunos sitios más concretos")
 
-ubicacion= str (st.selectbox (" Vamos a verlo en el mapa", dat.colecciones()))
+ubic= str (st.selectbox (" Vamos a verlo en el mapa", mdb.colecciones()))
 
-mapa=folium_static (dat.get_map (ubicacion, items))
+mapa=folium_static (get_map (ubic, items))
+
+if not mapa:
+    st.write ("Lo sentimos, con la selección actual no hay resultados disponibles")

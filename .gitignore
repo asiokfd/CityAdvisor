@@ -1,6 +1,5 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
 *$py.class
 .vscode
 .vs
@@ -10,7 +9,6 @@ mapa.html
 *.so
 .vs
 # Distribution / packaging
-.Python
 build/
 develop-eggs/
 dist/
