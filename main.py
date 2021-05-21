@@ -11,7 +11,7 @@ import src.getdata as tac
 st.set_page_config(layout="wide", page_title = "CityAdvisor")
 
 
-
+st.title ("CityAdvisor!")
 col1,col2 = st.beta_columns([2,3])
 imagen = Image.open("images/portada2.jpg")
 imagen2= Image.open("images/portada.jpg")

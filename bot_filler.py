@@ -6,3 +6,5 @@ df= pd.read_csv ("../Data/listacodigos.csv")
 madrid=df[7785:7816]
 
 fill_db(madrid["codigopostalid"])
+
+# dá error
