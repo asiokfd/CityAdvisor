@@ -142,4 +142,6 @@ def fill_db (lista):
     for item in lista:
         driver.find_element_by_xpath("/html/body/div[1]/div[1]/div/div/div/div/section/div/div[1]/div[6]/div/div[1]/div/input").send_keys(item)
         driver.find_element_by_xpath("/html/body/div[1]/div[1]/div/div/div/div/section/div/div[1]/div[6]/div/div[1]/div/input").send_keys(Keys.ENTER)
+        time.sleep(15) #damos tiempo a que se metan los datos
+        driver.refresh() #y refrescamos para vaciar el campo
         time.sleep(420) 
