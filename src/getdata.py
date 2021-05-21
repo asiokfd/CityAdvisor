@@ -1,7 +1,10 @@
 from .testdata import test, validar_codigo, get_primary
 import pandas as pd
 from .config import db, client, dic_categorias, gmaps
-
+from selenium import webdriver
+import time
+from time import sleep
+from selenium.webdriver.common.keys import Keys
 
 
 
@@ -127,3 +130,16 @@ def new_func():
     rentacodigo = pd.read_csv ("./Data/rentaporcp.csv")
     rentacodigo['codigo postal'] = rentacodigo['codigo postal'].apply(lambda x: "0" + str(x) if len(str(x))==4 else str(x))
     return rentacodigo
+
+
+def fill_db (lista):
+    """
+    Función que recibe como parámetro una lista de códigos postales, y mediante el uso de selenium los introduce en la base de datos
+    """
+    driver = webdriver.Chrome()
+    driver.implicitly_wait(3)
+    driver.get ("http://localhost:8501/")
+    for item in lista:
+        driver.find_element_by_xpath("/html/body/div[1]/div[1]/div/div/div/div/section/div/div[1]/div[6]/div/div[1]/div/input").send_keys(item)
+        driver.find_element_by_xpath("/html/body/div[1]/div[1]/div/div/div/div/section/div/div[1]/div[6]/div/div[1]/div/input").send_keys(Keys.ENTER)
+        time.sleep(420) 
